@@ -517,4 +517,12 @@ copyBtn.addEventListener('click',async()=>{
   const code='WEBLAYER';
   try{if(navigator.clipboard&&window.isSecureContext) await navigator.clipboard.writeText(code); else throw new Error('fallback')}
   catch(_){const ta=document.createElement('textarea');ta.value=code;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(e){}ta.remove()}
-  copyBtn.textContent='kimásolva ✓';setTimeout(()=>copyBtn.textContent=
+  copyBtn.textContent='kimásolva ✓';setTimeout(()=>copyBtn.textContent='kód másolása',1600);beep(880,.07,'triangle',.045);
+});
+
+buildBricks();balls=[makeBall()];
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
