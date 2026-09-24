@@ -397,4 +397,73 @@ function finishWin(){
 function spawnConfetti(){
   confetti=[];
   const palette=[COLORS.cyan,COLORS.blue,COLORS.dark,COLORS.orange,'#7fd6f7','#fff'];
-  for(let i=
+  for(let i=0;i<130;i++) confetti.push({x:rand(0,W),y:rand(-260,-20),vx:rand(-42,42),vy:rand(70,190),rot:rand(0,6.28),vr:rand(-5,5),w:rand(5,11),h:rand(8,17),c:palette[i%palette.length],life:rand(2.8,5)});
+}
+function updateConfetti(dt){for(const p of confetti){p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=55*dt;p.rot+=p.vr*dt}confetti=confetti.filter(p=>p.life>0&&p.y<H+40)}
+
+function roundedRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+
+function drawBackground(){
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#dff6ff');g.addColorStop(.55,'#f9fdff');g.addColorStop(1,'#d8f3fb');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // distant sun
+  ctx.globalAlpha=.85;ctx.fillStyle='#fff6d9';ctx.beginPath();ctx.arc(840,145,54,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  // clouds
+  drawCloud(118,122,.9,.7);drawCloud(748,106,.75,.55);drawCloud(485,360,.58,.24);
+  // horizon / sea
+  ctx.fillStyle='rgba(0,174,239,.10)';ctx.fillRect(0,430,W,210);
+  ctx.strokeStyle='rgba(0,124,195,.13)';ctx.lineWidth=2;
+  for(let y=455;y<640;y+=28){ctx.beginPath();for(let x=0;x<=W;x+=20){const yy=y+Math.sin((x+y)*.03)*3; if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke()}
+  // plane route
+  ctx.save();ctx.setLineDash([8,11]);ctx.strokeStyle='rgba(0,55,103,.10)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(60,390);ctx.bezierCurveTo(260,330,660,440,900,350);ctx.stroke();ctx.restore();
+  // The actual coupon code stays hidden until the reward screen.
+  // During play the player is literally freeing the wide 20% discount banner.
+  ctx.save();
+  ctx.globalAlpha=.14;
+  ctx.translate(W/2,305);
+  ctx.rotate(-.012);
+  roundedRect(-392,-82,784,164,24);
+  ctx.fillStyle=COLORS.cyan;
+  ctx.fill();
+  ctx.strokeStyle='rgba(0,55,103,.28)';
+  ctx.lineWidth=3;
+  roundedRect(-392,-82,784,164,24);
+  ctx.stroke();
+  ctx.fillStyle=COLORS.dark;
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.font='900 56px Arial';
+  ctx.fillText('20% KEDVEZMÉNY',0,0);
+  ctx.restore();
+}
+function drawCloud(x,y,s,a){ctx.save();ctx.globalAlpha=a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,28*s,Math.PI,0);ctx.arc(x+32*s,y-16*s,35*s,Math.PI,0);ctx.arc(x+70*s,y,30*s,Math.PI,0);ctx.rect(x,y,70*s,25*s);ctx.fill();ctx.restore()}
+
+function drawHud(){
+  ctx.save();ctx.fillStyle='rgba(255,255,255,.92)';roundedRect(18,94,924,38,14);ctx.fill();
+  ctx.fillStyle=COLORS.dark;ctx.font='800 13px Arial';ctx.textBaseline='middle';
+  ctx.textAlign='left';ctx.fillText('PONT  '+score,34,113);
+  const left=bricks.filter(b=>b.alive).length, total=bricks.length;
+  ctx.textAlign='center';ctx.fillText('HALADÁS  '+(total-left)+' / '+total,360,113);
+  ctx.fillText('LEGJOBB IDŐ  '+formatTime(bestTime),655,113);
+  ctx.textAlign='right';ctx.fillText('ÉLET  '+('●'.repeat(Math.max(0,lives))),923,113);
+  ctx.restore();
+}
+
+function drawBricks(){
+  for(const br of bricks){
+    if(!br.alive)continue;
+    const pal=br.kind===0?[COLORS.cyan,'#008dc6']:br.kind===1?[COLORS.dark,'#075986']:[COLORS.orange,'#dd6e10'];
+    ctx.save();
+    const glow=br.flash>0?12:0; if(glow){ctx.shadowColor='#fff';ctx.shadowBlur=glow;br.flash-=.08}
+    const g=ctx.createLinearGradient(br.x,br.y,br.x,br.y+br.h);g.addColorStop(0,pal[0]);g.addColorStop(1,pal[1]);ctx.fillStyle=g;roundedRect(br.x,br.y,br.w,br.h,10);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=1;roundedRect(br.x+.5,br.y+.5,br.w-1,br.h-1,9.5);ctx.stroke();
+    // travel glyphs as simple vector-ish symbols
+    ctx.fillStyle='#fff';ctx.globalAlpha=.92;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=br.icon==='✈'?'900 20px Arial':'900 15px Arial';ctx.fillText(br.icon,br.x+br.w/2,br.y+br.h/2+1);
+    ctx.restore();
+  }
+}
+function drawPaddle(){
+  ctx.save();
+  ctx.shadowColor='rgba(0,55,103,.18)';ctx.shadowBlur=14;ctx.shadowOffsetY=6;
+  const x=paddle.x,y=paddle.y,w=paddle.w,h=paddle.h;
+  // suitcase handle
+  ctx.strokeStyle=COLORS.orange;ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+w*.43,y+2);ctx.lineTo(x+w*.43,y-7);ctx.
