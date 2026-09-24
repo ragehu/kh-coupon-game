@@ -100,4 +100,82 @@
           </svg>
         </div>
       </div>
-      <button id="soundBtn" class=
+      <button id="soundBtn" class="sound-btn" type="button">🔊 hang</button>
+    </div>
+
+    <section id="intro" class="screen" aria-label="Játék indítása">
+      <div class="hero">
+        <div class="plane-line" aria-hidden="true">
+          <svg viewBox="0 0 900 180" preserveAspectRatio="none">
+            <path d="M40 128 C210 20, 340 178, 540 70 S760 40, 860 88" fill="none" stroke="#007cc3" stroke-width="3" stroke-dasharray="8 10"/>
+            <g transform="translate(625 48) rotate(-14)"><path d="M0 15 L42 0 L34 13 L54 17 L34 21 L42 34 L0 19 L-24 27 L-17 18 L-24 9 Z" fill="#007cc3"/></g>
+          </svg>
+        </div>
+        <div class="eyebrow"><span class="chev">»»</span> K&amp;H utasbiztosítás</div>
+        <h1>szabadítsd ki a <span class="pct">20%-os</span><br>kedvezményt!</h1>
+        <p class="lead">Törd át az utazás akadályait, és a pálya végén felfedjük a 20%-os kedvezményhez tartozó kuponkódot.</p>
+        <div class="travel-strip" aria-hidden="true">
+          <div class="travel-chip">✈️ repülés</div>
+          <div class="travel-chip">🧳 poggyász</div>
+          <div class="travel-chip">🏖️ nyaralás</div>
+          <div class="travel-chip">🛡️ biztonság</div>
+        </div>
+        <button id="startBtn" class="btn" type="button">játék indítása</button>
+        <div class="how">mozgatás: egér / érintés / ← → &nbsp;·&nbsp; a labda automatikusan indul</div>
+      </div>
+    </section>
+
+    <section id="win" class="screen win-screen hidden" aria-label="Sikeres teljesítés">
+      <div class="hero">
+        <div class="eyebrow"><span class="chev">»»</span> sikerült!</div>
+        <h1>kiszabadítottad<br>a kedvezményt 🎉</h1>
+        <div id="timeResult" class="time-result" aria-live="polite"></div>
+        <div class="coupon">
+          <div class="coupon-kicker">K&amp;H utasbiztosítás</div>
+          <div class="coupon-value"><span>20%</span> kedvezmény</div>
+          <div class="coupon-label">kuponkód</div>
+          <div class="code-row">
+            <div id="couponCode" class="code">WEBLAYER</div>
+            <button id="copyBtn" class="copy-btn" type="button">kód másolása</button>
+          </div>
+        </div>
+        <div class="actions">
+          <a class="btn" href="https://biztositas.kh.hu/utasbiztositas-kalkulator/" target="_blank" rel="noopener">tovább az utasbiztosításhoz</a>
+          <button id="replayBtn" class="btn secondary" type="button">újrajátszom</button>
+        </div>
+        <div class="micro-link-wrap">
+          <a class="micro-link" href="https://www.kh.hu/biztositas/mikrobiztositasok" target="_blank" rel="noopener">
+            <span>Ismerd meg a K&amp;H Mikrobiztosítás termékeinket is</span><span class="arrow" aria-hidden="true">›</span>
+          </a>
+        </div>
+        <div class="disclaimer">A kedvezmény igénybevételének feltételeiről és az aktuális biztosítási ajánlatokról a K&amp;H hivatalos felületein tájékozódj.</div>
+      </div>
+    </section>
+
+    <section id="gameover" class="screen hidden" aria-label="Játék vége">
+      <div class="gameover-card">
+        <div class="eyebrow"><span class="chev">»»</span> majdnem megvan</div>
+        <h2>még egy kör?</h2>
+        <p>A kupon nem szalad el. Az összetört akadályok maradnak, csak kapj el még néhány labdát.</p>
+        <button id="continueBtn" class="btn" type="button">folytatom</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const intro = document.getElementById('intro');
+const winScreen = document.getElementById('win');
+const gameover = document.getElementById('gameover');
+const startBtn = document.getElementById('startBtn');
+const replayBtn = document.getElementById('replayBtn');
+const continueBtn = document.getElementById('continueBtn');
+const copyBtn = document.getElementById('copyBtn');
+const soundBtn = document.getElementById('soundBtn');
+const timeResult = document.getElementById('timeResult');
+
+const W = canvas.width, H = canvas.he
