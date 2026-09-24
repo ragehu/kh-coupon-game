@@ -74,13 +74,17 @@
 
   @media(max-width:640px){
     body{padding:0;background:#fff}
-    .frame{border-radius:0;border:0;box-shadow:none;min-height:100svh}
+    .frame{border-radius:0;border:0;box-shadow:none}
     .screen{padding:82px 18px 22px}
     .topbar{height:68px;padding:9px 11px}
     .logo-card{padding:5px 8px}.logo{width:66px;height:39px}
     .sound-btn{min-height:40px;padding:0 12px;font-size:13px}
     .travel-strip{gap:7px}.travel-chip{padding:7px 9px;font-size:12px}
     .coupon{padding:18px 16px 20px}
+  }
+  @media(max-width:640px) and (orientation:portrait){
+    canvas{aspect-ratio:12/25}
+    .app{width:100%}
   }
   @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.screen{transition:none}}
 </style>
@@ -178,6 +182,11 @@ const copyBtn = document.getElementById('copyBtn');
 const soundBtn = document.getElementById('soundBtn');
 const timeResult = document.getElementById('timeResult');
 
+const MOBILE_PORTRAIT = window.matchMedia('(max-width: 640px) and (orientation: portrait)').matches;
+if(MOBILE_PORTRAIT){
+  canvas.width = 480;
+  canvas.height = 1000;
+}
 const W = canvas.width, H = canvas.height;
 const COLORS = {
   cyan:'#00aeef', blue:'#007cc3', dark:'#003767', orange:'#f58220',
@@ -215,7 +224,13 @@ function formatTime(seconds){
 }
 let bestTime = loadBestTime();
 
-const paddle = {x:W/2-78,y:H-55,w:156,h:25,vx:0,targetX:null,wideTimer:0};
+const BASE_PADDLE_W = MOBILE_PORTRAIT ? 116 : 156;
+const WIDE_PADDLE_W = MOBILE_PORTRAIT ? 154 : 205;
+const BASE_BALL_SPEED = MOBILE_PORTRAIT ? 270 : 355;
+const MAX_BALL_SPEED = MOBILE_PORTRAIT ? 390 : 510;
+const TOP_WALL = MOBILE_PORTRAIT ? 168 : 92;
+const PADDLE_Y_OFFSET = MOBILE_PORTRAIT ? 76 : 55;
+const paddle = {x:W/2-BASE_PADDLE_W/2,y:H-PADDLE_Y_OFFSET,w:BASE_PADDLE_W,h:MOBILE_PORTRAIT?27:25,vx:0,targetX:null,wideTimer:0};
 let balls = [];
 let bricks = [];
 let drops = [];
@@ -248,20 +263,24 @@ function beep(freq=440,dur=.05,type='sine',gain=.045){
 }
 function winChime(){[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle',.055),i*95));}
 
-function makeBall(x=W/2,y=H-92,angle=-Math.PI/2+rand(-.32,.32),speed=355){
+function makeBall(x=W/2,y=H-(MOBILE_PORTRAIT?116:92),angle=-Math.PI/2+rand(-.32,.32),speed=BASE_BALL_SPEED){
   return {x,y,px:x,py:y,r:9,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,trail:[]};
 }
 
 function buildBricks(){
   bricks=[]; brickBreaks=0;
-  const cols=8, rows=5, gap=8, bw=94, bh=40;
+  const cols=MOBILE_PORTRAIT?6:8;
+  const rows=MOBILE_PORTRAIT?7:5;
+  const gap=MOBILE_PORTRAIT?6:8;
+  const bh=MOBILE_PORTRAIT?42:40;
+  const bw=MOBILE_PORTRAIT?(W-40-(cols-1)*gap)/cols:94;
   const totalW=cols*bw+(cols-1)*gap;
   const startX=(W-totalW)/2;
-  const startY=143;
+  const startY=MOBILE_PORTRAIT?178:143;
   for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       // Slightly sculpted skyline: open two corner cells on top row.
-      if(r===0 && (c===0 || c===7)) continue;
+      if(r===0 && (c===0 || c===cols-1)) continue;
       const kind=(r+c)%3;
       bricks.push({x:startX+c*(bw+gap),y:startY+r*(bh+gap),w:bw,h:bh,alive:true,kind,icon:travelIcons[(r*cols+c)%travelIcons.length],flash:0});
     }
@@ -269,7 +288,7 @@ function buildBricks(){
 }
 
 function resetAll(){
-  score=0; lives=4; runElapsed=0; drops=[]; confetti=[]; shake=0; paddle.w=156; paddle.x=W/2-paddle.w/2; paddle.targetX=null; paddle.wideTimer=0;
+  score=0; lives=4; runElapsed=0; drops=[]; confetti=[]; shake=0; paddle.w=BASE_PADDLE_W; paddle.x=W/2-paddle.w/2; paddle.targetX=null; paddle.wideTimer=0;
   buildBricks(); balls=[makeBall()]; state='play';
 }
 function continueGame(){
@@ -313,7 +332,7 @@ function activateDrop(d){
     balls.push(makeBall(base.x,base.y,Math.atan2(base.vy,base.vx)+.42,speed));
     score+=250; beep(920,.11,'sine',.05);
   }else{
-    paddle.wideTimer=9; paddle.w=205; score+=150; beep(820,.1,'sine',.05);
+    paddle.wideTimer=9; paddle.w=WIDE_PADDLE_W; score+=150; beep(820,.1,'sine',.05);
   }
 }
 
@@ -324,7 +343,7 @@ function update(dt){
   shake=Math.max(0,shake-dt*18);
   if(paddle.wideTimer>0){
     paddle.wideTimer-=dt;
-    if(paddle.wideTimer<=0){const mid=paddle.x+paddle.w/2;paddle.w=156;paddle.x=clamp(mid-paddle.w/2,16,W-16-paddle.w)}
+    if(paddle.wideTimer<=0){const mid=paddle.x+paddle.w/2;paddle.w=BASE_PADDLE_W;paddle.x=clamp(mid-paddle.w/2,16,W-16-paddle.w)}
   }
   if(paddle.targetX!=null){
     const desired=clamp(paddle.targetX-paddle.w/2,16,W-16-paddle.w);
@@ -354,11 +373,11 @@ function update(dt){
       b.px=b.x;b.py=b.y;b.x+=b.vx*step;b.y+=b.vy*step;
       if(b.x-b.r<12){b.x=12+b.r;b.vx=Math.abs(b.vx);beep(260,.02,'sine',.018)}
       if(b.x+b.r>W-12){b.x=W-12-b.r;b.vx=-Math.abs(b.vx);beep(260,.02,'sine',.018)}
-      if(b.y-b.r<92){b.y=92+b.r;b.vy=Math.abs(b.vy);beep(280,.02,'sine',.018)}
+      if(b.y-b.r<TOP_WALL){b.y=TOP_WALL+b.r;b.vy=Math.abs(b.vy);beep(280,.02,'sine',.018)}
       if(b.vy>0 && rectCircleCollision(paddle,b)){
         b.y=paddle.y-b.r-1;
         const rel=clamp((b.x-(paddle.x+paddle.w/2))/(paddle.w/2),-1,1);
-        const speed=Math.min(510,Math.hypot(b.vx,b.vy)*1.012+1.2);
+        const speed=Math.min(MAX_BALL_SPEED,Math.hypot(b.vx,b.vy)*1.012+1.2);
         const ang=-Math.PI/2+rel*1.02;
         b.vx=Math.cos(ang)*speed + paddle.vx*.10;
         b.vy=Math.sin(ang)*speed;
@@ -406,45 +425,66 @@ function roundedRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
 function drawBackground(){
   const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#dff6ff');g.addColorStop(.55,'#f9fdff');g.addColorStop(1,'#d8f3fb');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
   // distant sun
-  ctx.globalAlpha=.85;ctx.fillStyle='#fff6d9';ctx.beginPath();ctx.arc(840,145,54,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+  ctx.globalAlpha=.85;ctx.fillStyle='#fff6d9';ctx.beginPath();ctx.arc(MOBILE_PORTRAIT?410:840,MOBILE_PORTRAIT?210:145,MOBILE_PORTRAIT?38:54,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
   // clouds
-  drawCloud(118,122,.9,.7);drawCloud(748,106,.75,.55);drawCloud(485,360,.58,.24);
+  if(MOBILE_PORTRAIT){
+    drawCloud(55,145,.62,.65);drawCloud(335,130,.52,.50);drawCloud(210,560,.48,.22);
+  }else{
+    drawCloud(118,122,.9,.7);drawCloud(748,106,.75,.55);drawCloud(485,360,.58,.24);
+  }
   // horizon / sea
-  ctx.fillStyle='rgba(0,174,239,.10)';ctx.fillRect(0,430,W,210);
+  const seaY=MOBILE_PORTRAIT?620:430;
+  ctx.fillStyle='rgba(0,174,239,.10)';ctx.fillRect(0,seaY,W,H-seaY);
   ctx.strokeStyle='rgba(0,124,195,.13)';ctx.lineWidth=2;
-  for(let y=455;y<640;y+=28){ctx.beginPath();for(let x=0;x<=W;x+=20){const yy=y+Math.sin((x+y)*.03)*3; if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke()}
+  for(let y=seaY+25;y<H;y+=28){ctx.beginPath();for(let x=0;x<=W;x+=20){const yy=y+Math.sin((x+y)*.03)*3; if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy)}ctx.stroke()}
   // plane route
-  ctx.save();ctx.setLineDash([8,11]);ctx.strokeStyle='rgba(0,55,103,.10)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(60,390);ctx.bezierCurveTo(260,330,660,440,900,350);ctx.stroke();ctx.restore();
+  ctx.save();ctx.setLineDash([8,11]);ctx.strokeStyle='rgba(0,55,103,.10)';ctx.lineWidth=2;ctx.beginPath();
+  if(MOBILE_PORTRAIT){ctx.moveTo(25,570);ctx.bezierCurveTo(130,520,340,620,455,545)}
+  else{ctx.moveTo(60,390);ctx.bezierCurveTo(260,330,660,440,900,350)}
+  ctx.stroke();ctx.restore();
   // The actual coupon code stays hidden until the reward screen.
   // During play the player is literally freeing the wide 20% discount banner.
   ctx.save();
   ctx.globalAlpha=.14;
-  ctx.translate(W/2,305);
+  ctx.translate(W/2,MOBILE_PORTRAIT?345:305);
   ctx.rotate(-.012);
-  roundedRect(-392,-82,784,164,24);
+  const couponW=MOBILE_PORTRAIT?440:784;
+  const couponH=MOBILE_PORTRAIT?220:164;
+  roundedRect(-couponW/2,-couponH/2,couponW,couponH,24);
   ctx.fillStyle=COLORS.cyan;
   ctx.fill();
   ctx.strokeStyle='rgba(0,55,103,.28)';
   ctx.lineWidth=3;
-  roundedRect(-392,-82,784,164,24);
+  roundedRect(-couponW/2,-couponH/2,couponW,couponH,24);
   ctx.stroke();
   ctx.fillStyle=COLORS.dark;
   ctx.textAlign='center';
   ctx.textBaseline='middle';
-  ctx.font='900 56px Arial';
+  ctx.font=MOBILE_PORTRAIT?'900 36px Arial':'900 56px Arial';
   ctx.fillText('20% KEDVEZMÉNY',0,0);
   ctx.restore();
 }
 function drawCloud(x,y,s,a){ctx.save();ctx.globalAlpha=a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,28*s,Math.PI,0);ctx.arc(x+32*s,y-16*s,35*s,Math.PI,0);ctx.arc(x+70*s,y,30*s,Math.PI,0);ctx.rect(x,y,70*s,25*s);ctx.fill();ctx.restore()}
 
 function drawHud(){
-  ctx.save();ctx.fillStyle='rgba(255,255,255,.92)';roundedRect(18,94,924,38,14);ctx.fill();
-  ctx.fillStyle=COLORS.dark;ctx.font='800 13px Arial';ctx.textBaseline='middle';
-  ctx.textAlign='left';ctx.fillText('PONT  '+score,34,113);
+  ctx.save();
   const left=bricks.filter(b=>b.alive).length, total=bricks.length;
-  ctx.textAlign='center';ctx.fillText('HALADÁS  '+(total-left)+' / '+total,360,113);
-  ctx.fillText('LEGJOBB IDŐ  '+formatTime(bestTime),655,113);
-  ctx.textAlign='right';ctx.fillText('ÉLET  '+('●'.repeat(Math.max(0,lives))),923,113);
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  if(MOBILE_PORTRAIT){
+    roundedRect(12,88,W-24,70,14);ctx.fill();
+    ctx.fillStyle=COLORS.dark;ctx.font='800 14px Arial';ctx.textBaseline='middle';
+    ctx.textAlign='left';ctx.fillText('PONT  '+score,24,108);
+    ctx.textAlign='right';ctx.fillText('HALADÁS  '+(total-left)+' / '+total,W-24,108);
+    ctx.textAlign='left';ctx.fillText('LEGJOBB IDŐ  '+formatTime(bestTime),24,139);
+    ctx.textAlign='right';ctx.fillText('ÉLET  '+('●'.repeat(Math.max(0,lives))),W-24,139);
+  }else{
+    roundedRect(18,94,924,38,14);ctx.fill();
+    ctx.fillStyle=COLORS.dark;ctx.font='800 13px Arial';ctx.textBaseline='middle';
+    ctx.textAlign='left';ctx.fillText('PONT  '+score,34,113);
+    ctx.textAlign='center';ctx.fillText('HALADÁS  '+(total-left)+' / '+total,360,113);
+    ctx.fillText('LEGJOBB IDŐ  '+formatTime(bestTime),655,113);
+    ctx.textAlign='right';ctx.fillText('ÉLET  '+('●'.repeat(Math.max(0,lives))),923,113);
+  }
   ctx.restore();
 }
 
@@ -506,7 +546,8 @@ window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRigh
 window.addEventListener('keyup',e=>{keys[e.key]=false});
 setInterval(()=>{
   if(state!=='play'||paddle.targetX!=null)return;
-  if(keys.ArrowLeft)paddle.vx=-520;else if(keys.ArrowRight)paddle.vx=520;
+  const keySpeed=MOBILE_PORTRAIT?330:520;
+  if(keys.ArrowLeft)paddle.vx=-keySpeed;else if(keys.ArrowRight)paddle.vx=keySpeed;
 },16);
 
 startBtn.addEventListener('click',startGame);
